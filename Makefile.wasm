@@ -2,7 +2,7 @@ CC = $(HOME)/emsdk/upstream/emscripten/emcc
 
 DIST    = dist
 OBJDIR  = obj/wasm
-EXE     = $(DIST)/worship.html
+EXE     = $(DIST)/index.html
 
 CFLAGS  = -DLINUX -O2 -fomit-frame-pointer -ffunction-sections -ffast-math
 CFLAGS += -D__BUILDDATE=\"$(shell date +%d-%b-%Y)\"
