@@ -8,7 +8,7 @@ EXE = worship.bin
 CFLAGS = -DLINUX -O2 -fomit-frame-pointer -ffunction-sections -ffast-math
 CFLAGS += -D__BUILDDATE=\"$(shell date +%d-%b-%Y)\"
 LDFLAGS = -flto
-INCLUDE = -I$(TOOLCHAIN_SYSROOT)/include -I$(TOOLCHAIN_SYSROOT)/include/SDL
+INCLUDE = $(shell pkg-config --cflags sdl2 SDL2_mixer)
 
 ifdef DEBUG
  CFLAGS += -g
@@ -16,7 +16,7 @@ else
  CFLAGS += -G0
 endif
 
-LIB = -DGCW -lSDL -lSDL_mixer
+LIB = $(shell pkg-config --libs sdl2 SDL2_mixer)
 
 CC = $(HOST)gcc
 STRIP = $(HOST)strip
@@ -57,6 +57,9 @@ endif
 
 .c.o:
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+wasm:
+	$(MAKE) -f Makefile.wasm
 
 clean:
 	rm -rf $(OBJ) $(EXE)

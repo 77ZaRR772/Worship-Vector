@@ -1,0 +1,15 @@
+# Build outputs
+*.o
+worship.bin
+dist/
+
+# Scratch scripts
+p.patch
+p.sh
+s2.sh
+s3.sh
+
+# IDE / editor
+*.cbp
+*.depend
+*.layout

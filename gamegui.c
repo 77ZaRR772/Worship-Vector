@@ -15,6 +15,8 @@
 
 #include "vars.h"
 #include "sblit.h"
+#include "ssystem.h"
+#include "mapdata.h"
 
 char tower_name[6][32] = { "MINIGUN", "ANTIAIR", "ARTILER", "SLOWRAY",
 		"SNIPER ", "PLANT  "

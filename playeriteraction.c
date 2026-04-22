@@ -14,6 +14,7 @@
  */
 
 #include "vars.h"
+#include "ssystem.h"
 
 #include "vlines.h"
 #include "waveai.h"

@@ -17,11 +17,28 @@
 #include "gameframe.h"
 #include "vars.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+static void em_loop(void) {
+	if (!GameLoopEnabled) {
+		emscripten_cancel_main_loop();
+		return;
+	}
+	GameFrame();
+	GameCoreTick();
+	count++;
+}
+#endif
+
 void StartGameLoop(void) {
+#ifdef __EMSCRIPTEN__
+	emscripten_set_main_loop(em_loop, 0, 1);
+#else
 	while (GameLoopEnabled) {
 		GameFrame();
 		GameCoreTick();
 		count++;
 	}
-
+#endif
 }

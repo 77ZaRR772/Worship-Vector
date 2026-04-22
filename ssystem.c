@@ -1,3 +1,4 @@
+#include <stdio.h>
 /*
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -13,10 +14,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <SDL_mixer.h>
+#include <SDL2/SDL_mixer.h>
 #include <string.h>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
+SDL_Window *window = NULL; SDL_Renderer *renderer = NULL; SDL_Texture *texture = NULL;
 #include "vars.h"
 #include "ssystem.h"
 #include "palette.h"
@@ -37,7 +39,7 @@ void RamHack(void) //I't me! RamHack!
 void Terminate(void) {
 	FreeSound();
 	Mix_CloseAudio();
-	SDL_Quit();
+	SDL_DestroyTexture(texture); SDL_DestroyRenderer(renderer); SDL_DestroyWindow(window); SDL_Quit();
 #ifdef GP2X
 	chdir("/usr/gp2x");
 	execl("/usr/gp2x/gp2xmenu", "/usr/gp2x/gp2xmenu", NULL);
@@ -62,6 +64,9 @@ void InitGameCore(void) {
 	RamHack();
 #endif
 
+#ifdef __EMSCRIPTEN__
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+#endif
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
 		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
 		exit(1);
@@ -78,14 +83,25 @@ void InitGameCore(void) {
 	}
 
 #ifdef GP2X
-	SDL_ShowCursor(SDL_DISABLE);
-	screen = SDL_SetVideoMode (320, 240, 8, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	    SDL_ShowCursor(SDL_DISABLE);
+    window = SDL_CreateWindow("Worship Vector", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 960, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_RenderSetLogicalSize(renderer, 320, 240);
+    screen = SDL_CreateRGBSurface(0, 320, 240, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 320, 240);
 #endif
 
 #if defined(WIN32) || defined(GCW) || defined(LINUX)
-	SDL_ShowCursor(SDL_DISABLE);
-	screen = SDL_SetVideoMode (320, 240, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
-	//screen = SDL_SetVideoMode (640 ,480, 32, SDL_HWSURFACE | SDL_FULLSCREEN);
+	    SDL_ShowCursor(SDL_DISABLE);
+#ifdef __EMSCRIPTEN__
+    window = SDL_CreateWindow("Worship Vector", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
+#else
+    window = SDL_CreateWindow("Worship Vector", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 960, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+#endif
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_RenderSetLogicalSize(renderer, 320, 240);
+    screen = SDL_CreateRGBSurface(0, 320, 240, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 320, 240);
 #endif
 	InitPalette();
 #ifdef GP2X
@@ -116,14 +132,8 @@ void InitGameCore(void) {
 #define AXIS_DEADZONE 7000
 static const Sint8 angle_detection[9] = { 7, 0, 1, 6, -1, 2, 5, 4, 3 };
 int i_keyb[23];
-static const SDLKey sd_keyb[23] = { SDLK_KP8, SDLK_KP9, SDLK_KP6, SDLK_KP3,
-		SDLK_KP2, SDLK_KP1, SDLK_KP4, SDLK_KP7, SDLK_LCTRL, SDLK_LALT,
-		SDLK_LSHIFT, SDLK_SPACE, SDLK_TAB, SDLK_BACKSPACE, SDLK_MINUS,
-		SDLK_EQUALS, SDLK_ESCAPE, SDLK_1, SDLK_t, SDLK_UP, SDLK_RIGHT,
-		SDLK_DOWN, SDLK_LEFT };
-/*static const SDLKey sd_keyb[23]={SDLK_KP8,SDLK_KP9,SDLK_KP6,SDLK_KP3,SDLK_KP2,SDLK_KP1,SDLK_KP4,SDLK_KP7,
- * SDLK_SPACE,SDLK_q,SDLK_c,SDLK_a,SDLK_z,SDLK_x,SDLK_MINUS,SDLK_EQUALS,SDLK_ESCAPE,SDLK_TAB,SDLK_t,SDLK_UP,SDLK_RIGHT,SDLK_DOWN,SDLK_LEFT
- * };
+static const SDL_Keycode sd_keyb[23] = {     SDLK_KP_8, SDLK_KP_9, SDLK_KP_6, SDLK_KP_3,     SDLK_KP_2, SDLK_KP_1, SDLK_KP_4, SDLK_KP_7,     SDLK_SPACE, SDLK_DOWN, SDLK_LSHIFT, SDLK_UP,     SDLK_q, SDLK_e, SDLK_MINUS, SDLK_EQUALS,     SDLK_ESCAPE, SDLK_1, SDLK_t,     SDLK_w, SDLK_d, SDLK_s, SDLK_a };
+/*static const SDL_Keycode sd_keyb[23] = {     SDLK_KP_8, SDLK_KP_9, SDLK_KP_6, SDLK_KP_3,     SDLK_KP_2, SDLK_KP_1, SDLK_KP_4, SDLK_KP_7,     SDLK_SPACE, SDLK_DOWN, SDLK_LSHIFT, SDLK_UP,     SDLK_q, SDLK_e, SDLK_MINUS, SDLK_EQUALS,     SDLK_ESCAPE, SDLK_1, SDLK_t,     SDLK_w, SDLK_d, SDLK_s, SDLK_a };
  */
 
 static const int sd_key_ref[11] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -228,12 +238,12 @@ void CoreProcInput(void) {
 			break;
 			case SDL_KEYDOWN:
 			for (i=0;i<23;i++)
-			if (event.key.keysym.sym==sd_keyb[i])
+			if (event.key.keysym.sym==sd_keyb[i] || (i==12 && event.key.keysym.sym==SDLK_LEFT) || (i==13 && event.key.keysym.sym==SDLK_RIGHT))
 			i_keyb[i]=1;
 			break;
 			case SDL_KEYUP:
 			for (i=0;i<23;i++)
-			if (event.key.keysym.sym==sd_keyb[i])
+			if (event.key.keysym.sym==sd_keyb[i] || (i==12 && event.key.keysym.sym==SDLK_LEFT) || (i==13 && event.key.keysym.sym==SDLK_RIGHT))
 			i_keyb[i]=0;
 			break;
 
@@ -385,13 +395,13 @@ void GameCoreTick(void) {
 
 	int i, j;
 	Uint32 *dest = screen->pixels;
-	Uint8  *src  = &scrbuf;
+	Uint8  *src  = (Uint8 *)scrbuf;
 	int t;
 	for (j=0; j<240; j++)
 		for (i=0; i<320; i++)
 		{
 			t = *src++;
-			*dest++ = palette[t][2] + (palette[t][1]<<8) + (palette[t][0]<<16);
+			*dest++ = palette[t][0] + (palette[t][1]<<8) + (palette[t][2]<<16) + 0xFF000000;
 		}
 	/*
 	 * for (y=0;y<240;y++)
@@ -421,7 +431,7 @@ void GameCoreTick(void) {
 
 	SDL_UnlockSurface(screen);
 
-	SDL_Flip(screen);
+	SDL_UpdateTexture(texture, NULL, screen->pixels, screen->pitch); SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); SDL_RenderClear(renderer); SDL_RenderCopy(renderer, texture, NULL, NULL); SDL_RenderPresent(renderer);
 
 	if (gamespeed > 0)
 		SDL_Delay(gamespeed * 10);

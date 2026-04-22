@@ -1,0 +1,64 @@
+CC = $(HOME)/emsdk/upstream/emscripten/emcc
+
+DIST    = dist
+OBJDIR  = obj/wasm
+EXE     = $(DIST)/worship.html
+
+CFLAGS  = -DLINUX -O2 -fomit-frame-pointer -ffunction-sections -ffast-math
+CFLAGS += -D__BUILDDATE=\"$(shell date +%d-%b-%Y)\"
+CFLAGS += -sUSE_SDL=2 -sUSE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS=ogg,wav
+
+LDFLAGS  = -sUSE_SDL=2 -sUSE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS=ogg,wav
+LDFLAGS += --shell-file shell.html
+LDFLAGS += -sALLOW_MEMORY_GROWTH=1
+LDFLAGS += -sINITIAL_MEMORY=33554432
+LDFLAGS += --preload-file redist/Click.wav@/Click.wav
+LDFLAGS += --preload-file redist/Beep.wav@/Beep.wav
+LDFLAGS += --preload-file redist/Order.wav@/Order.wav
+LDFLAGS += --preload-file redist/Victory.wav@/Victory.wav
+LDFLAGS += --preload-file redist/MainControl.ogg@/MainControl.ogg
+LDFLAGS += --preload-file redist/DataSmasher.ogg@/DataSmasher.ogg
+LDFLAGS += --preload-file redist/Defense.ogg@/Defense.ogg
+
+SRC =	gameframe.c \
+	gamestate.c \
+	initgame.c \
+	mapdata.c \
+	playeriteraction.c \
+	renderobjects.c \
+	vars.c \
+	gamegui.c \
+	gamestep.c \
+	main.c \
+	mobs.c \
+	postrender.c \
+	sblit.c \
+	vlines.c \
+	zmath.c \
+	gameloop.c \
+	gpu3d.c \
+	mainmenu.c \
+	palette.c \
+	rendermap.c \
+	ssystem.c \
+	waveai.c
+
+OBJ  = $(SRC:.c=.o)
+WOBJ = $(addprefix $(OBJDIR)/, $(OBJ))
+
+all: $(OBJDIR) $(DIST) $(EXE)
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(DIST):
+	mkdir -p $(DIST)
+
+$(EXE): $(WOBJ)
+	$(CC) $(LDFLAGS) $(WOBJ) -o $@
+
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJDIR) $(DIST)

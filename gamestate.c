@@ -15,6 +15,7 @@
 
 #include "vars.h"
 #include "ssystem.h"
+#include "sblit.h"
 
 #include "gamestep.h"
 
