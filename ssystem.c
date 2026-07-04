@@ -23,6 +23,7 @@ SDL_Window *window = NULL; SDL_Renderer *renderer = NULL; SDL_Texture *texture =
 #include "ssystem.h"
 #include "palette.h"
 #include "zmath.h"
+#include "gpu3d.h"
 
 #ifdef GP2X
 #include "zlext.h"
@@ -234,9 +235,33 @@ void CoreProcInput(void) {
 		switch (event.type)
 		{
 			case SDL_QUIT:
+
+			case SDL_MOUSEWHEEL:
+            if (event.wheel.y < 0) {
+                dist -= 5000;
+                if (dist < 40000) dist = 40000;
+            } else if (event.wheel.y > 0) {
+                dist += 5000;
+                if (dist > 150000) dist = 150000;
+            }
+            break;
+
 			GameLoopEnabled=0;
 			break;
+
 			case SDL_KEYDOWN:
+
+			if ((event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER) &&
+                (event.key.keysym.mod & KMOD_ALT)) {
+
+                Uint32 flags = SDL_GetWindowFlags(window);
+                if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                    SDL_SetWindowFullscreen(window, 0);
+                } else {
+                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                }
+            }
+
 			for (i=0;i<23;i++)
 			if (event.key.keysym.sym==sd_keyb[i] || (i==12 && event.key.keysym.sym==SDLK_LEFT) || (i==13 && event.key.keysym.sym==SDLK_RIGHT))
 			i_keyb[i]=1;

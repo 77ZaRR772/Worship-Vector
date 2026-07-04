@@ -19,7 +19,7 @@
 #define FPDIV(x,y)	((((x)<<6)/((y)>>6))>>4) 
 
 Sint32 matrix[16], matrix2[16], mmatrix[16], matrixstack[16];
-Sint32 dist = 95500, dist0 = 90000;
+Sint32 dist = 70000, dist0 = 90000;
 
 void matrixmul(void) {
 	int x, y, i;

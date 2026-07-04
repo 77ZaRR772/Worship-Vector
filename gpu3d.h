@@ -21,3 +21,4 @@ extern void zltranslate(Sint32 x, Sint32 y, Sint32 z);
 extern void zlpushmatrix(void);
 extern void zlpopmatrix(void);
 extern void zlclearscene(void);
+extern Sint32 dist;
