@@ -49,6 +49,7 @@ void Terminate(void) {
 
 SDL_Surface *screen = NULL;
 SDL_Joystick *joy = NULL;
+static Uint32 palette32[256];
 
 Uint8 d_sound_count = 0;
 int audio_channels = 1;
@@ -105,6 +106,9 @@ void InitGameCore(void) {
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 320, 240);
 #endif
 	InitPalette();
+	for (int i = 0; i < 256; i++)
+		palette32[i] = palette[i][0] + (palette[i][1] << 8)
+				+ (palette[i][2] << 16) + 0xFF000000;
 #ifdef GP2X
 	Uint16 i;
 	for (i=0;i<256;i++)
@@ -235,6 +239,8 @@ void CoreProcInput(void) {
 		switch (event.type)
 		{
 			case SDL_QUIT:
+			GameLoopEnabled = 0;
+			break;
 
 			case SDL_MOUSEWHEEL:
             if (event.wheel.y < 0) {
@@ -245,9 +251,6 @@ void CoreProcInput(void) {
                 if (dist > 150000) dist = 150000;
             }
             break;
-
-			GameLoopEnabled=0;
-			break;
 
 			case SDL_KEYDOWN:
 
@@ -378,10 +381,6 @@ void CoreProcInput(void) {
 
 }
 
-#if defined(WIN32) || defined(GCW) || defined(LINUX)
-U32 scrbuf2[1228800/4];
-#endif
-
 void GameCoreTick(void) {
 	CoreProcInput();
 #ifdef GP2X
@@ -395,63 +394,11 @@ void GameCoreTick(void) {
 #endif
 
 #if defined(WIN32) || defined(GCW) || defined(LINUX)
-#if 0
-	U32 x,y,i,ii,col;
-	U8 c,r,b,g;
-	i=0;ii=0;
-
-	for (y=0;y<240;y++)
-	{
-		for (x=0;x<320;x++)
-		{
-			c=scrbuf[i++];
-			r=palette[c][2];
-			g=palette[c][1];
-			b=palette[c][0];
-			col=b<<16;
-			col+=+g<<8;
-			col+=r;
-			scrbuf2[ii]=col;
-			ii++;
-		}
-	}
-	memcpy(screen->pixels,scrbuf2,76800*4);
-#endif
-
-	int i, j;
+	int i;
 	Uint32 *dest = screen->pixels;
-	Uint8  *src  = (Uint8 *)scrbuf;
-	int t;
-	for (j=0; j<240; j++)
-		for (i=0; i<320; i++)
-		{
-			t = *src++;
-			*dest++ = palette[t][0] + (palette[t][1]<<8) + (palette[t][2]<<16) + 0xFF000000;
-		}
-	/*
-	 * for (y=0;y<240;y++)
-	 * {
-	 * for (x=0;x<320;x++)
-	 * {
-	 * c=scrbuf[i++];
-	 * r=palette[c][2];
-	 * g=palette[c][1];
-	 * b=palette[c][0];
-	 * col=b<<16;
-	 * col+=+g<<8;
-	 * col+=r;
-	 * scrbuf2[ii]=col;
-	 * scrbuf2[ii+1]=col;
-	 * scrbuf2[ii+640]=col;
-	 * scrbuf2[ii+641]=col;
-	 * 
-	 * ii+=2;
-	 }
-	 ii+=640;
-	 }
-	 memcpy(screen->pixels,scrbuf2,1228800);
-	 */
-
+	Uint8 *src = scrbuf;
+	for (i = 0; i < 76800; i++)
+		*dest++ = palette32[*src++];
 #endif
 
 	SDL_UnlockSurface(screen);

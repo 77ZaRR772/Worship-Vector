@@ -1383,92 +1383,107 @@ Uint8 sfont[32768] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-void DrawLine(Sint16 x0, Sint16 y0, Sint16 x1, Sint16 y1, Uint8 color) {
-	Sint32 x, y, i, ii, s, nsx, nsy;
-	Uint8 onscreen = 1;
-	if (x0 < 0)
-		if (x1 < 0)
-			onscreen = 0;
-	if (x0 > 319)
-		if (x1 > 319)
-			onscreen = 0;
-	if (y0 < 0)
-		if (y1 < 0)
-			onscreen = 0;
-	if (y0 > 239)
-		if (y1 > 239)
-			onscreen = 0;
-	if (x0 == x1)
-		if (y0 == y1)
-			onscreen = 0;
+static Uint8 LineOutCode(Sint32 x, Sint32 y, Sint32 xmin, Sint32 ymin,
+		Sint32 xmax, Sint32 ymax) {
+	Uint8 code = 0;
+	if (x < xmin)
+		code |= 1;
+	else if (x > xmax)
+		code |= 2;
+	if (y < ymin)
+		code |= 4;
+	else if (y > ymax)
+		code |= 8;
+	return code;
+}
 
-	if (onscreen) {
-		if (zabs(y1 - y0) > zabs(x1 - x0))
-			s = zabs(y1 - y0);
-		else
-			s = zabs(x1 - x0);
-		nsx = (x1 - x0) * 65536 / s;
-		nsy = (y1 - y0) * 65536 / s;
-		x = x0 << 16;
-		y = y0 << 16;
+static Uint8 ClipLine(Sint32 *x0, Sint32 *y0, Sint32 *x1, Sint32 *y1,
+		Sint32 xmin, Sint32 ymin, Sint32 xmax, Sint32 ymax) {
+	Uint8 code0 = LineOutCode(*x0, *y0, xmin, ymin, xmax, ymax);
+	Uint8 code1 = LineOutCode(*x1, *y1, xmin, ymin, xmax, ymax);
 
-		for (i = 0; i < s; i++) {
-			x = x + nsx;
-			y = y + nsy;
-			ii = (x >> 16) + (y >> 16) * 320;
-			if ((ii >= 0) & (ii < 76800))
-				if (x >= 0)
-					if (x < 20971520)
-						scrbuf[ii] = color;
+	while (1) {
+		Sint32 x, y;
+		Uint8 code;
+		if ((code0 | code1) == 0)
+			return 1;
+		if (code0 & code1)
+			return 0;
+
+		code = code0 ? code0 : code1;
+		if (code & 8) {
+			x = *x0 + (Sint32) ((Sint64) (*x1 - *x0) * (ymax - *y0)
+					/ (*y1 - *y0));
+			y = ymax;
+		} else if (code & 4) {
+			x = *x0 + (Sint32) ((Sint64) (*x1 - *x0) * (ymin - *y0)
+					/ (*y1 - *y0));
+			y = ymin;
+		} else if (code & 2) {
+			y = *y0 + (Sint32) ((Sint64) (*y1 - *y0) * (xmax - *x0)
+					/ (*x1 - *x0));
+			x = xmax;
+		} else {
+			y = *y0 + (Sint32) ((Sint64) (*y1 - *y0) * (xmin - *x0)
+					/ (*x1 - *x0));
+			x = xmin;
+		}
+
+		if (code == code0) {
+			*x0 = x;
+			*y0 = y;
+			code0 = LineOutCode(x, y, xmin, ymin, xmax, ymax);
+		} else {
+			*x1 = x;
+			*y1 = y;
+			code1 = LineOutCode(x, y, xmin, ymin, xmax, ymax);
 		}
 	}
 }
 
-void DrawLine2(Sint16 x0, Sint16 y0, Sint16 x1, Sint16 y1, Uint8 color) {
-	Sint32 x, y, i, ii, s, nsx, nsy;
-	Uint8 onscreen = 1;
-	if (x0 < 0)
-		if (x1 < 0)
-			onscreen = 0;
-	if (x0 > 319)
-		if (x1 > 319)
-			onscreen = 0;
-	if (y0 < 0)
-		if (y1 < 0)
-			onscreen = 0;
-	if (y0 > 239)
-		if (y1 > 239)
-			onscreen = 0;
-	if (x0 == x1)
-		if (y0 == y1)
-			onscreen = 0;
+static void RasterLine(Sint32 x0, Sint32 y0, Sint32 x1, Sint32 y1,
+		Uint8 color, Uint8 thick) {
+	Sint32 dx = zabs(x1 - x0);
+	Sint32 sx = x0 < x1 ? 1 : -1;
+	Sint32 dy = -zabs(y1 - y0);
+	Sint32 sy = y0 < y1 ? 1 : -1;
+	Sint32 err = dx + dy;
 
-	if (onscreen) {
-
-		if (zabs(y1 - y0) > zabs(x1 - x0))
-			s = zabs(y1 - y0);
-		else
-			s = zabs(x1 - x0);
-		nsx = (x1 - x0) * 65536 / s;
-		nsy = (y1 - y0) * 65536 / s;
-		x = x0 << 16;
-		y = y0 << 16;
-
-		for (i = 0; i < s; i++) {
-			x = x + nsx;
-			y = y + nsy;
-			ii = (x >> 16) + (y >> 16) * 320;
-
-			if ((ii >= 320) & (ii < 76480))
-				if (x >= 65536)
-					if (x < 20905984) {
-						scrbuf[ii - 1] = color;
-						scrbuf[ii - 320] = color;
-						scrbuf[ii + 1] = color;
-						scrbuf[ii + 320] = color;
-					}
+	while (1) {
+		Sint32 i = x0 + y0 * 320;
+		Sint32 e2;
+		if (thick) {
+			scrbuf[i - 1] = color;
+			scrbuf[i - 320] = color;
+			scrbuf[i + 1] = color;
+			scrbuf[i + 320] = color;
+		} else {
+			scrbuf[i] = color;
+		}
+		if (x0 == x1 && y0 == y1)
+			break;
+		e2 = 2 * err;
+		if (e2 >= dy) {
+			err += dy;
+			x0 += sx;
+		}
+		if (e2 <= dx) {
+			err += dx;
+			y0 += sy;
 		}
 	}
+}
+
+void DrawLine(Sint16 x0, Sint16 y0, Sint16 x1, Sint16 y1, Uint8 color) {
+	Sint32 cx0 = x0, cy0 = y0, cx1 = x1, cy1 = y1;
+	if (ClipLine(&cx0, &cy0, &cx1, &cy1, 0, 0, 319, 239))
+		RasterLine(cx0, cy0, cx1, cy1, color, 0);
+}
+
+void DrawLine2(Sint16 x0, Sint16 y0, Sint16 x1, Sint16 y1, Uint8 color) {
+	Sint32 cx0 = x0, cy0 = y0, cx1 = x1, cy1 = y1;
+	if (ClipLine(&cx0, &cy0, &cx1, &cy1, 1, 1, 318, 238))
+		RasterLine(cx0, cy0, cx1, cy1, color, 1);
 }
 
 void DarkRect(Sint16 x0, Sint16 y0, Sint16 x1, Sint16 y1) {

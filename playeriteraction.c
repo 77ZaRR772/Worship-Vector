@@ -13,6 +13,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "vars.h"
 #include "ssystem.h"
 
@@ -322,7 +324,6 @@ void PlayerAction(void) {
 }
 
 void PlayerIteraction(void) {
-	Sint32 i;
 	camera[0] = cursorx + cm_cam[cursormode][0];
 	camera[2] = -cursory + cm_cam[cursormode][2];
 	camera[1] = +cm_cam[cursormode][1];
@@ -382,8 +383,7 @@ void PlayerIteraction(void) {
 	} //Debug exit
 
 	if (lastcursormode != cursormode) {
-		for (i = 0; i < 76800; i++)
-			scrbuf[i] = 15;
+		memset(scrbuf, 15, sizeof(scrbuf));
 		cursormodecount = 0;
 	} else
 		cursormodecount++;

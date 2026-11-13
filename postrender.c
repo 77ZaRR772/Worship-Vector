@@ -13,6 +13,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "vars.h"
 #include "zmath.h"
 
@@ -20,20 +22,12 @@
 #include "gpu3d.h"
 
 void PostRender(void) {
-	U32 x, y, i;
+	Uint32 i;
 	zlclearscene();
 
-	if (volumedelay) {
-	}
-
 	if (screenblend == 0)
-		for (i = 0; i < 76800; i++) {
-			scrbuf[i] = 0;
-		}
-
+		memset(scrbuf, 0, sizeof(scrbuf));
 	else
-		for (i = 0; i < 76800; i++) {
+		for (i = 0; i < 76800; i++)
 			scrbuf[i] = NextColor0[scrbuf[i]];
-		}
-
 }
